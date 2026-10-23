@@ -21,11 +21,3 @@ jobs:
         with:
           name: Image.gz
           path: ${{ github.workspace }}/kernel/out/arch/arm64/boot/Image.gz
-      - name: Send Via Telegram
-        uses: BorisTestov/tg_sender_action@latest
-        env:
-          TG_SENDER_TG_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          TG_SENDER_TG_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TG_SENDER_PAYLOAD_MESSAGE: Moonbeam Gale Kernel
-          TG_SENDER_PAYLOAD_FILE_PATH: ${{ github.workspace }}/kernel/out/arch/arm64/boot/Image.gz
-        
