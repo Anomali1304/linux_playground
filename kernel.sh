@@ -4,10 +4,12 @@ branch_kernel=gpu-unlock-1068mhz
 defconfig_path=arch/arm64/configs/camellian_gl_defconfig
 defconfig=camellian_gl_defconfig
 
-#Toolchain export (LLVM 18.1.8 from toolchain.sh)
-export PATH="/usr/lib/llvm-10/bin:$(pwd)/clang/bin:$PATH"
-command -v clang >/dev/null || { echo "ERROR: clang not found; toolchain setup failed" >&2; exit 127; }
-command -v ld.lld >/dev/null || { echo "ERROR: ld.lld not found; toolchain setup failed" >&2; exit 127; }
+# Toolchain: match build.config.common and build.config.mtk.aarch64 (clang-r383902).
+clang_bin="$(pwd)/clang-toolchain/clang-r383902/bin"
+export PATH="$clang_bin:$PATH"
+for tool in clang ld.lld llvm-ar llvm-nm llvm-objcopy llvm-objdump llvm-readelf llvm-strip; do
+  command -v "$tool" >/dev/null || { echo "ERROR: $tool not found in Android Clang r383902 toolchain" >&2; exit 127; }
+done
 clang --version
 
 #Kernel clone
