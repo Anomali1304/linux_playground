@@ -7,18 +7,18 @@ apt-get install -y --no-install-recommends \
   git patch build-essential ncurses-dev libssl-dev bc flex bison rsync kmod cpio \
   python3 ccache tar gzip xz-utils zstd wget curl ca-certificates
 
-# Match the kernel repository's build.config.common / build.config.mtk.aarch64:
-# CLANG_PREBUILT_BIN=.../clang-r383902/bin
+# Download only the configured Android Clang r383902 directory.
 toolchain_dir="$(pwd)/clang-toolchain"
-if [[ ! -x "$toolchain_dir/clang-r383902/bin/clang" ]]; then
-  rm -rf "$toolchain_dir"
-  git clone --depth=1 --filter=blob:none --sparse \
-    https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86.git \
-    "$toolchain_dir"
-  git -C "$toolchain_dir" sparse-checkout set clang-r383902
+clang_dir="$toolchain_dir/clang-r383902"
+if [[ ! -x "$clang_dir/bin/clang" ]]; then
+  rm -rf "$clang_dir"
+  mkdir -p "$clang_dir"
+  archive_url="https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/master/clang-r383902.tar.gz"
+  curl -fL --retry 3 --retry-delay 2 "$archive_url" -o /tmp/clang-r383902.tar.gz
+  tar -xzf /tmp/clang-r383902.tar.gz -C "$clang_dir"
 fi
 
-clang_bin="$toolchain_dir/clang-r383902/bin"
+clang_bin="$clang_dir/bin"
 for tool in clang ld.lld llvm-ar llvm-nm llvm-objcopy llvm-objdump llvm-readelf llvm-strip; do
   if [[ ! -x "$clang_bin/$tool" ]]; then
     echo "ERROR: expected Android Clang r383902 tool missing: $clang_bin/$tool" >&2
