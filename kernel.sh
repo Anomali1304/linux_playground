@@ -77,6 +77,36 @@ if "ksu_handle_faccessat" not in s:
     p.write_text(s)
 PY
 
+# Add the required Android 16+ newfstat return hook (ReSukiSU manual-hook checker requires it).
+python3 - <<'PY'
+from pathlib import Path
+p = Path("fs/stat.c")
+s = p.read_text()
+decl_marker = "#if !defined(__ARCH_WANT_STAT64) || defined(__ARCH_WANT_SYS_NEWFSTATAT)"
+decl = """#ifdef CONFIG_KSU_MANUAL_HOOK
+extern void ksu_handle_newfstat_ret(unsigned int *fd, struct stat __user **statbuf_ptr);
+#if defined(__ARCH_WANT_STAT64) || defined(__ARCH_WANT_COMPAT_STAT64)
+extern void ksu_handle_fstat64_ret(unsigned long *fd, struct stat64 __user **statbuf_ptr);
+#endif
+#endif
+
+"""
+if "ksu_handle_newfstat_ret" not in s:
+    if decl_marker not in s:
+        raise SystemExit("ERROR: cannot find stat declaration insertion point")
+    s = s.replace(decl_marker, decl + decl_marker, 1)
+needle = "\terror = cp_new_stat(&stat, statbuf);"
+call = """\terror = cp_new_stat(&stat, statbuf);
+#ifdef CONFIG_KSU_MANUAL_HOOK
+\tksu_handle_newfstat_ret(&fd, &statbuf);
+#endif"""
+if "ksu_handle_newfstat_ret(&fd, &statbuf)" not in s:
+    if needle not in s:
+        raise SystemExit("ERROR: cannot find newfstat return insertion point")
+    s = s.replace(needle, call, 1)
+p.write_text(s)
+PY
+
 # Ensure all required hooks exist, and the incompatible read hook was not introduced.
 grep -q 'ksu_handle_execveat' fs/exec.c
 grep -q 'ksu_handle_faccessat' fs/open.c
