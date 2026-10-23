@@ -6,7 +6,7 @@ jobs:
   kernel_compiler:
     runs-on: ubuntu-latest
     container:
-      image: archlinux/archlinux:base-devel
+      image: ubuntu:22.04
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
