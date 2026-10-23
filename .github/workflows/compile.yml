@@ -10,14 +10,38 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
       - name: Setup depencies and Toolchain
         run: |
           curl -LSs "https://raw.githubusercontent.com/${{ github.repository_owner }}/linux_playground/refs/heads/main/toolchain.sh" | bash
+
       - name: Kernel setup and compile
         run: |
           curl -LSs "https://raw.githubusercontent.com/${{ github.repository_owner }}/linux_playground/refs/heads/main/kernel.sh" | bash
-      - name: Upload build artifact
+
+      - name: Package AnyKernel3 for camellia
+        run: |
+          set -e
+          test -s "${{ github.workspace }}/kernel/out/arch/arm64/boot/Image.gz"
+          git clone --depth=1 --branch camellia https://github.com/Anomali1304/AnyKernel3.git "${{ github.workspace }}/AnyKernel3"
+          cp "${{ github.workspace }}/kernel/out/arch/arm64/boot/Image.gz" "${{ github.workspace }}/AnyKernel3/Image.gz"
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZIP_DEFLATED, ZipFile
+
+          root = Path.cwd() / "AnyKernel3"
+          output = Path.cwd() / "Camellia-AnyKernel3-OC.zip"
+          with ZipFile(output, "w", ZIP_DEFLATED) as archive:
+              for path in root.rglob("*"):
+                  if path.is_file() and ".git" not in path.relative_to(root).parts:
+                      archive.write(path, path.relative_to(root))
+          print(f"Created {output} ({output.stat().st_size} bytes)")
+          PY
+          test -s "${{ github.workspace }}/Camellia-AnyKernel3-OC.zip"
+
+      - name: Upload flashable AnyKernel3 ZIP
         uses: actions/upload-artifact@v7
         with:
-          name: Image.gz
-          path: ${{ github.workspace }}/kernel/out/arch/arm64/boot/Image.gz
+          name: Camellia-AnyKernel3-OC
+          path: ${{ github.workspace }}/Camellia-AnyKernel3-OC.zip
+          if-no-files-found: error
