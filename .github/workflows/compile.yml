@@ -27,7 +27,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl -fLSs "https://raw.githubusercontent.com/${{ github.repository_owner }}/linux_playground/refs/heads/main/kernel.sh" | bash
+          curl -fLSs "https://raw.githubusercontent.com/${{ github.repository_owner }}/linux_playground/refs/heads/main/kernel.sh" -o kernel.sh
+          bash kernel.sh
 
       - name: Package AnyKernel3 for camellia
         shell: bash
