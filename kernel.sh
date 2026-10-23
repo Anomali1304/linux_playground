@@ -1,8 +1,8 @@
 #configuration
-kernel_source=https://github.com/xxblebleblexx/android_kernel_xiaomi_gale.git
-branch_kernel=compat
-defconfig_path=arch/arm64/configs/moonbeam_defconfig
-defconfig=moonbeam_defconfig
+kernel_source=https://github.com/Anomali1304/android_kernel_xiaomi_camellia.git
+branch_kernel=lineage-23.2
+defconfig_path=/arch/arm64/configs/camellian_gl_defconfig
+defconfig=camellian_gl_defconfig
 
 #Toolchain export
 export PATH=$(pwd)/clang/bin:$PATH
