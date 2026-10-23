@@ -8,24 +8,35 @@ jobs:
     container:
       image: ubuntu:22.04
     steps:
+      - name: Bootstrap container tools
+        run: |
+          set -e
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates curl git python3
+
       - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Setup depencies and Toolchain
+        shell: bash
         run: |
-          curl -LSs "https://raw.githubusercontent.com/${{ github.repository_owner }}/linux_playground/refs/heads/main/toolchain.sh" | bash
+          set -euo pipefail
+          curl -fLSs "https://raw.githubusercontent.com/${{ github.repository_owner }}/linux_playground/refs/heads/main/toolchain.sh" | bash
 
       - name: Kernel setup and compile
+        shell: bash
         run: |
-          curl -LSs "https://raw.githubusercontent.com/${{ github.repository_owner }}/linux_playground/refs/heads/main/kernel.sh" | bash
+          set -euo pipefail
+          curl -fLSs "https://raw.githubusercontent.com/${{ github.repository_owner }}/linux_playground/refs/heads/main/kernel.sh" | bash
 
       - name: Package AnyKernel3 for camellia
+        shell: bash
         run: |
-          set -e
+          set -euo pipefail
           test -s "${{ github.workspace }}/kernel/out/arch/arm64/boot/Image.gz"
           git clone --depth=1 --branch camellia https://github.com/Anomali1304/AnyKernel3.git "${{ github.workspace }}/AnyKernel3"
           cp "${{ github.workspace }}/kernel/out/arch/arm64/boot/Image.gz" "${{ github.workspace }}/AnyKernel3/Image.gz"
-          python - <<'PY'
+          python3 - <<'PY'
           from pathlib import Path
           from zipfile import ZIP_DEFLATED, ZipFile
 
