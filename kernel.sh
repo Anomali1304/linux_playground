@@ -30,17 +30,23 @@ curl -fLSs --retry 3 "https://raw.githubusercontent.com/xxblebleblexx/manual_hoo
 python3 - "$hook_patch" <<'PY'
 from pathlib import Path
 import sys
+
 p = Path(sys.argv[1])
-s = p.read_text()
-# Drop two hunks that are incompatible with this source/KSU version.
-for path in ("fs/read_write.c", "fs/open.c"):
-    start = s.index("diff --git a/" + path)
-    next_diff = s.find("\\ndiff --git ", start + 1)
-    if next_diff < 0:
-        s = s[:start]
-    else:
-        s = s[:start] + s[next_diff + 1:]
-p.write_text(s)
+text = p.read_text()
+# Parse patch as diff sections and remove only the two incompatible file sections.
+parts = text.split("diff --git ")
+kept = []
+for part in parts:
+    if not part:
+        continue
+    header = part.splitlines()[0]
+    if header.startswith("a/fs/read_write.c ") or header.startswith("a/fs/open.c "):
+        print("Skipping incompatible manual-hook section:", header)
+        continue
+    kept.append("diff --git " + part)
+if not kept:
+    raise SystemExit("ERROR: filtered manual-hook patch is empty")
+p.write_text("".join(kept))
 PY
 # Do not allow a partial/broken patch to silently pass.
 if ! patch --batch --forward -p1 < "$hook_patch"; then
