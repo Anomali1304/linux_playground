@@ -22,6 +22,8 @@ echo "CONFIG_KSU=y" >> $defconfig_path
 
 # ReSukiSU manual hooks: external patch is best-effort; apply verified source edits separately.
 echo "CONFIG_KSU_MANUAL_HOOK=y" >> "$defconfig_path"
+curl -fLSs "https://raw.githubusercontent.com/xxblebleblexx/manual_hook_fix/refs/heads/main/resuki-4.19-cip-st.patch" -o /tmp/resuki-4.19-cip-st.patch
+patch -p1 < /tmp/resuki-4.19-cip-st.patch || true
 curl -fLSs "https://raw.githubusercontent.com/Anomali1304/linux_playground/main/resuki_hook_fix.py" -o /tmp/resuki_hook_fix.py
 python3 /tmp/resuki_hook_fix.py
 
