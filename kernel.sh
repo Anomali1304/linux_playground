@@ -32,9 +32,15 @@ from pathlib import Path
 import sys
 p = Path(sys.argv[1])
 s = p.read_text()
-start = s.index("diff --git a/fs/read_write.c")
-end = s.index("diff --git a/fs/stat.c", start)
-p.write_text(s[:start] + s[end:])
+# Drop two hunks that are incompatible with this source/KSU version.
+for path in ("fs/read_write.c", "fs/open.c"):
+    start = s.index("diff --git a/" + path)
+    next_diff = s.find("\\ndiff --git ", start + 1)
+    if next_diff < 0:
+        s = s[:start]
+    else:
+        s = s[:start] + s[next_diff + 1:]
+p.write_text(s)
 PY
 # Do not allow a partial/broken patch to silently pass.
 if ! patch --batch --forward -p1 < "$hook_patch"; then
