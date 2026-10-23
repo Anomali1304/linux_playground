@@ -3,7 +3,6 @@ set -Eeuo pipefail
 
 export DEBIAN_FRONTEND=noninteractive
 # Ubuntu 22.04 no longer ships the older Clang needed by this Linux 4.14 tree.
-echo "deb http://archive.ubuntu.com/ubuntu focal universe" > /etc/apt/sources.list.d/focal-universe.list
 apt-get update
 apt-get install -y --no-install-recommends \
   git patch build-essential ncurses-dev libssl-dev bc flex bison rsync kmod cpio \
