@@ -27,7 +27,7 @@ wget https://raw.githubusercontent.com/xxblebleblexx/manual_hook_fix/refs/heads/
 
 # Repair the 4.19-targeted external patch for this kernel's actual 4.14 source.
 # Keep ReSukiSU manual hooks enabled; fail early if source layout differs.
-python - <<'PY'
+python3 - <<'PY
 from pathlib import Path
 
 p = Path("fs/exec.c")
