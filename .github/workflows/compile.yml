@@ -37,22 +37,25 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -s "${{ github.workspace }}/kernel/out/arch/arm64/boot/Image.gz"
-          git clone --depth=1 --branch camellia https://github.com/Anomali1304/AnyKernel3.git "${{ github.workspace }}/AnyKernel3"
-          cp "${{ github.workspace }}/kernel/out/arch/arm64/boot/Image.gz" "${{ github.workspace }}/AnyKernel3/Image.gz"
+          # Shell steps run inside the job container, where github.workspace may
+          # resolve to the host path (/home/runner/work) rather than the mount (/__w).
+          WORKSPACE="$PWD"
+          test -s "$WORKSPACE/kernel/out/arch/arm64/boot/Image.gz"
+          git clone --depth=1 --branch camellia https://github.com/Anomali1304/AnyKernel3.git "$WORKSPACE/AnyKernel3"
+          cp "$WORKSPACE/kernel/out/arch/arm64/boot/Image.gz" "$WORKSPACE/AnyKernel3/Image.gz"
           python3 - <<'PY'
           from pathlib import Path
           from zipfile import ZIP_DEFLATED, ZipFile
 
-          root = Path.cwd() / "AnyKernel3"
-          output = Path.cwd() / "Camellia-AnyKernel3-OC.zip"
+          root = Path("AnyKernel3")
+          output = Path("Camellia-AnyKernel3-OC.zip")
           with ZipFile(output, "w", ZIP_DEFLATED) as archive:
               for path in root.rglob("*"):
                   if path.is_file() and ".git" not in path.relative_to(root).parts:
                       archive.write(path, path.relative_to(root))
           print(f"Created {output} ({output.stat().st_size} bytes)")
           PY
-          test -s "${{ github.workspace }}/Camellia-AnyKernel3-OC.zip"
+          test -s "Camellia-AnyKernel3-OC.zip"
 
       - name: Upload flashable AnyKernel3 ZIP
         uses: actions/upload-artifact@v7
