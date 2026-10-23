@@ -4,7 +4,7 @@ set -Eeuo pipefail
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y --no-install-recommends \
-  git patch build-essential ncurses-dev libssl-dev bc flex bison rsync kmod cpio \
+  git patch build-essential binutils-aarch64-linux-gnu ncurses-dev libssl-dev bc flex bison rsync kmod cpio \
   python3 ccache tar gzip xz-utils zstd wget curl ca-certificates
 
 # Pin the AOSP Gitiles snapshot that contains clang-r383902.
