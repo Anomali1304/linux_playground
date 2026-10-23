@@ -22,12 +22,16 @@ curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup
 #KSU config
 echo "CONFIG_KSU=y" >> $defconfig_path
 
-# ReSukiSU manual hooks: external patch is best-effort; apply verified source edits separately.
+# Apply the manual-hook patch intended for Linux 4.14.
 echo "CONFIG_KSU_MANUAL_HOOK=y" >> "$defconfig_path"
-curl -fLSs "https://raw.githubusercontent.com/xxblebleblexx/manual_hook_fix/refs/heads/main/resuki-4.19-cip-st.patch" -o /tmp/resuki-4.19-cip-st.patch
-patch -p1 < /tmp/resuki-4.19-cip-st.patch || true
-curl -fLSs "https://raw.githubusercontent.com/Anomali1304/linux_playground/main/resuki_hook_fix.py" -o /tmp/resuki_hook_fix.py
-python3 /tmp/resuki_hook_fix.py
+hook_patch=/tmp/manualhook-v1.6-4.14-openela.patch
+curl -fLSs --retry 3 "https://raw.githubusercontent.com/xxblebleblexx/manual_hook_fix/main/manualhook-v1.6-4.14-openela.patch" -o "$hook_patch"
+patch --batch --forward -p1 < "$hook_patch"
+# Fail early if required manual hooks were not applied.
+grep -q 'ksu_handle_execveat' fs/exec.c
+grep -q 'ksu_handle_faccessat' fs/open.c
+grep -q 'ksu_handle_stat' fs/stat.c
+grep -q 'ksu_handle_sys_reboot' kernel/reboot.c
 
 #Nomount driver
 echo "CONFIG_NOMOUNT=y" >> $defconfig_path
