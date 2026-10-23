@@ -5,7 +5,7 @@ defconfig_path=arch/arm64/configs/camellian_gl_defconfig
 defconfig=camellian_gl_defconfig
 
 #Toolchain export (LLVM 18.1.8 from toolchain.sh)
-export PATH="$(pwd)/clang/bin:$PATH"
+export PATH="/usr/lib/llvm-14/bin:$(pwd)/clang/bin:$PATH"
 command -v clang >/dev/null || { echo "ERROR: clang not found; toolchain setup failed" >&2; exit 127; }
 command -v ld.lld >/dev/null || { echo "ERROR: ld.lld not found; toolchain setup failed" >&2; exit 127; }
 clang --version
