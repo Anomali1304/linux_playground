@@ -22,6 +22,7 @@ curl -fLSs --retry 3 "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/k
 # KSU config
 grep -qxF 'CONFIG_KSU=y' "$defconfig_path" || echo 'CONFIG_KSU=y' >> "$defconfig_path"
 grep -qxF 'CONFIG_KSU_MANUAL_HOOK=y' "$defconfig_path" || echo 'CONFIG_KSU_MANUAL_HOOK=y' >> "$defconfig_path"
+grep -qxF 'CONFIG_KALLSYMS_ALL=y' "$defconfig_path" || echo 'CONFIG_KALLSYMS_ALL=y' >> "$defconfig_path"
 
 # Apply Linux 4.14 manual hooks, but omit the upstream read_write hook:
 # that patch references an undefined fd in vfs_read and is rejected by this KSU tree.
@@ -116,6 +117,31 @@ if grep -q 'ksu_vfs_read_hook' fs/read_write.c; then
   echo "ERROR: incompatible ksu_vfs_read_hook remains in fs/read_write.c" >&2
   exit 1
 fi
+
+# BakaSU static-symbol integration required by this ReSukiSU tree.
+python3 - <<'PY'
+from pathlib import Path
+p = Path("security/selinux/selinuxfs.c")
+s = p.read_text()
+old = "static ssize_t (*write_op[])(struct file *, char *, size_t) = {"
+new = "ssize_t (*write_op[])(struct file *, char *, size_t) = {"
+if old in s:
+    s = s.replace(old, new, 1)
+elif new not in s:
+    raise SystemExit("ERROR: cannot find SELinux write_op table")
+export = "EXPORT_SYMBOL_GPL(write_op);"
+if export not in s:
+    marker = "\t[SEL_CONTEXT] = sel_write_context,\n};"
+    if marker not in s:
+        raise SystemExit("ERROR: cannot find end of SELinux write_op table")
+    s = s.replace(marker, marker + "\n\n" + export, 1)
+if "#include <linux/export.h>" not in s:
+    s = s.replace("#include <linux/kernel.h>", "#include <linux/kernel.h>\n#include <linux/export.h>", 1)
+p.write_text(s)
+PY
+grep -q 'CONFIG_KALLSYMS_ALL=y' "$defconfig_path"
+grep -q 'EXPORT_SYMBOL_GPL(write_op)' security/selinux/selinuxfs.c
+grep -q '^ssize_t (\*write_op\[\])' security/selinux/selinuxfs.c || grep -q 'ssize_t (\*write_op\[\])' security/selinux/selinuxfs.c
 
 # NoMount driver
 echo "CONFIG_NOMOUNT=y" >> "$defconfig_path"
