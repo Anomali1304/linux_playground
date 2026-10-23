@@ -22,7 +22,69 @@ echo "CONFIG_KSU=y" >> $defconfig_path
 
 #manual hook
 echo "CONFIG_KSU_MANUAL_HOOK=y" >> $defconfig_path
-wget https://raw.githubusercontent.com/xxblebleblexx/manual_hook_fix/refs/heads/main/resuki-4.19-cip-st.patch;wait;patch -p1 < resuki-4.19-cip-st.patch
+wget https://raw.githubusercontent.com/xxblebleblexx/manual_hook_fix/refs/heads/main/resuki-4.19-cip-st.patch; wait; patch -p1 < resuki-4.19-cip-st.patch || true
+
+
+# Repair the 4.19-targeted external patch for this kernel's actual 4.14 source.
+# Keep ReSukiSU manual hooks enabled; fail early if source layout differs.
+python - <<'PY'
+from pathlib import Path
+
+p = Path("fs/exec.c")
+s = p.read_text()
+decl = """#ifdef CONFIG_KSU_MANUAL_HOOK
+__attribute__((hot))
+extern int ksu_handle_execveat(int *fd, struct filename **filename_ptr,
+                               void *argv, void *envp, int *flags);
+#endif
+
+"""
+needle = "static int do_execveat_common(int fd, struct filename *filename,"
+if "ksu_handle_execveat(&fd, &filename, &argv, &envp, &flags);" not in s:
+    if needle not in s:
+        raise SystemExit("ERROR: cannot locate do_execveat_common in fs/exec.c")
+    s = s.replace(needle, decl + needle, 1)
+    body = """\tint retval;
+
+\tif (IS_ERR(filename))"""
+    replacement = """\tint retval;
+
+#ifdef CONFIG_KSU_MANUAL_HOOK
+\tksu_handle_execveat(&fd, &filename, &argv, &envp, &flags);
+#endif
+
+\tif (IS_ERR(filename))"""
+    if body not in s:
+        raise SystemExit("ERROR: cannot locate do_execveat_common hook insertion point")
+    s = s.replace(body, replacement, 1)
+    p.write_text(s)
+
+p = Path("fs/open.c")
+s = p.read_text()
+decl = """#ifdef CONFIG_KSU_MANUAL_HOOK
+__attribute__((hot))
+extern int ksu_handle_faccessat(int *dfd, const char __user **filename_user,
+                               int *mode, int *flags);
+#endif
+
+"""
+needle = "SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)"
+if "ksu_handle_faccessat(&dfd, &filename, &mode, NULL);" not in s:
+    if needle not in s:
+        raise SystemExit("ERROR: cannot locate faccessat syscall in fs/open.c")
+    s = s.replace(needle, decl + needle, 1)
+    body = needle + "\n{"
+    replacement = body + """
+#ifdef CONFIG_KSU_MANUAL_HOOK
+\tksu_handle_faccessat(&dfd, &filename, &mode, NULL);
+#endif"""
+    if body not in s:
+        raise SystemExit("ERROR: cannot locate faccessat hook insertion point")
+    s = s.replace(body, replacement, 1)
+    p.write_text(s)
+
+print("Verified/injected ReSukiSU execveat and faccessat manual hooks.")
+PY
 
 #Nomount driver
 echo "CONFIG_NOMOUNT=y" >> $defconfig_path
