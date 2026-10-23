@@ -1,7 +1,7 @@
 #configuration
 kernel_source=https://github.com/Anomali1304/android_kernel_xiaomi_camellia.git
 branch_kernel=lineage-23.2
-defconfig_path=/arch/arm64/configs/camellian_gl_defconfig
+defconfig_path=arch/arm64/configs/camellian_gl_defconfig
 defconfig=camellian_gl_defconfig
 
 #Toolchain export
